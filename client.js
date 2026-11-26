@@ -282,7 +282,7 @@ button.hm-chip:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .hm-btn{appearance:none;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;transition:background .12s ease,border-color .12s ease}
 .hm-btn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l3)}
 .hm-btn:disabled{opacity:.5;cursor:default}
-.hm-btn[data-variant="primary"]{background:var(--dsw-alias-button-primary-fill);border-color:transparent;color:var(--dsw-alias-label-on-color)}
+.hm-btn[data-variant="primary"]{background:var(--dsw-alias-button-primary-fill);border-color:transparent;color:var(--dsw-alias-label-primary-foreground,var(--dsw-alias-label-on-color,#fff))}
 .hm-btn[data-variant="primary"]:hover:not(:disabled){background:var(--dsw-alias-button-primary-fill);border-color:transparent;opacity:.88}
 .hm-btn[data-variant="danger"]{color:var(--dsw-alias-state-error-primary);border-color:var(--dsw-alias-state-error-primary)}
 .hm-btn[data-variant="ghost"]{border-color:transparent;background:transparent;color:var(--dsw-alias-label-secondary)}
