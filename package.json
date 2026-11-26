@@ -1,6 +1,6 @@
 {
   "name": "dsh-hindsight-manager",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Manage Hindsight memory banks from DSH: add workspaces, classify banks, and create banks for Bots projects and group chats.",

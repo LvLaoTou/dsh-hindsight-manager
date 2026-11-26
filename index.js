@@ -24,6 +24,7 @@ export const name = 'hindsight-manager';
 
 const ACTIONS = [
   'status',
+  'connection',
   'banks',
   'workspaces',
   'projects',
@@ -34,6 +35,7 @@ const ACTIONS = [
   'bind_chat',
   'create_bank',
   'set_mission',
+  'set_connection',
   'unbind_workspace',
   'unbind_project',
   'unbind_chat',
@@ -120,6 +122,14 @@ function formatChats(data) {
     .join('\n');
 }
 
+function formatConnection(data) {
+  return [
+    `Hindsight 服务：${data.apiUrl}（来源：${data.apiUrlSource}${data.pluginUrlsLocked ? '，插件配置写死' : ''}）`,
+    `服务模式：${data.serverMode} · 令牌：${data.tokenSet ? `已设置（来源：${data.apiTokenSource}）` : '未设置'}`,
+    `配置文件：${data.path}${data.exists ? '' : '（尚不存在）'}`,
+  ].join('\n');
+}
+
 function toolResult(text) {
   // The tool's output schema is a plain string: the host validates the value
   // against it, and `render` turns it into the visible text block.
@@ -155,7 +165,8 @@ export function apply(ctx, config = {}) {
         description: [
           '管理 Hindsight 记忆 bank（与 DSH 的 Hindsight 记忆插件共用一套配置）。',
           'action 取值：',
-          'status（连接与统计）、banks（列出全部 bank 及分类）、workspaces（列出 DSH 工作区及接入状态）、projects（Bots 项目）、chats（Bots 群聊）、',
+          'status（连接与统计）、connection（当前服务地址、来源与令牌状态）、banks（列出全部 bank 及分类）、workspaces（列出 DSH 工作区及接入状态）、projects（Bots 项目）、chats（Bots 群聊）、',
+          'set_connection（改 Hindsight 服务地址：url 新地址，mode 为 cloud / self-hosted / daemon；令牌请在插件的设置页填写，不要写进工具参数）、',
           'bind_workspace（把工作区接入 bank；path 省略时为当前工作区）、bind_all_workspaces（全部工作区各接入一个 bank）、',
           'bind_project（Bots 项目文件夹接入 bank；project 传项目 key 或 id）、',
           'bind_chat（群聊接入 bank；chat 传群聊 id，folder 省略时用插件为该群准备的目录；把该群所属机器人的 workdir 指到这个目录，bank 才会收到对话）、',
@@ -171,8 +182,10 @@ export function apply(ctx, config = {}) {
             bank: { type: 'string', description: 'bank id；省略时按对象自动命名' },
             project: { type: 'string', description: 'Bots 项目 key（如 OPC）或项目 id' },
             chat: { type: 'string', description: '群聊 id，形如 feishu:<appKey>:<chatId>' },
-            folder: { type: 'string', description: '群聊绑定用的工作目录；省略时用 Bots 默认工作目录' },
+            folder: { type: 'string', description: '群聊绑定用的工作目录；省略时用插件为该群准备的目录' },
             mission: { type: 'string', description: '新建 bank 时写入的 reflect mission' },
+            url: { type: 'string', description: 'set_connection：新的 Hindsight 服务地址（http/https）' },
+            mode: { type: 'string', description: 'set_connection：cloud / self-hosted / daemon' },
             force: { type: 'string', description: '删除有数据的 bank 时传 1' },
           },
           required: ['action'],
@@ -190,11 +203,33 @@ export function apply(ctx, config = {}) {
             id: args.chat,
             folder: args.folder,
             mission: args.mission,
+            url: args.url,
+            mode: args.mode,
             force: args.force === '1' || args.force === 'true',
           };
           switch (action) {
             case 'status':
               return toolResult(formatOverview(await api.overview()));
+            case 'connection':
+              return toolResult(formatConnection(await api.connection()));
+            case 'set_connection': {
+              const result = await api.setConnection({ apiUrl: params.url, serverMode: params.mode });
+              const probe = result.probe;
+              const reach = probe?.reachable ? `可用（${probe.latencyMs}ms）` : `不可用 — ${probe?.error || '未知错误'}`;
+              return toolResult(
+                [
+                  result.saved === false
+                    ? `地址没有变化：${result.apiUrl}（来源：${result.apiUrlSource}）· 模式 ${result.serverMode}`
+                    : `已保存服务地址：${result.apiUrl}（来源：${result.apiUrlSource}）· 模式 ${result.serverMode}`,
+                  `连通性：${reach}`,
+                  result.saved === false ? '' : '记忆插件在重启 DSH 后使用新地址；本页面立即生效。',
+                  result.saved !== false && probe && !probe.reachable ? '注意：地址已保存，但现在连不上；改回可用地址或先修好服务。' : '',
+                  result.warning ? `注意：${result.warning}` : '',
+                ]
+                  .filter(Boolean)
+                  .join('\n'),
+              );
+            }
             case 'banks':
               return toolResult(formatBanks((await api.banks()).items));
             case 'workspaces':

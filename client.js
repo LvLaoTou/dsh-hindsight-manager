@@ -20,7 +20,7 @@ window.__ModuleLoader__.load({
         tabProjects: '项目',
         tabChats: '群聊',
         tabBanks: '全部 bank',
-        tabDiagnostics: '诊断',
+        tabDiagnostics: '设置',
         connected: '已连接',
         unreachable: '不可用',
         config: '配置文件',
@@ -109,6 +109,29 @@ window.__ModuleLoader__.load({
         bindAllNone: '没有可接入的工作区',
         bindAllPartial: '部分失败',
         mapSummary: '把该目录接入这个 bank',
+        connTitle: 'Hindsight 连接',
+        connUrl: '服务地址',
+        connMode: '服务模式',
+        connToken: '令牌',
+        connTokenHint: '已设置，留空保持不变',
+        connClearToken: '清除令牌',
+        connTest: '测试连接',
+        connTesting: '测试中…',
+        connSave: '保存',
+        connSaving: '保存中…',
+        connSaved: '连接已保存',
+        connSavedRestart: '记忆插件会在重启 DSH 后使用新地址；本页立即生效。',
+        connReachable: '可用',
+        connUnreachable: '不可用',
+        connHint: '部署在服务器上时填 http(s)://主机:端口（Hindsight 默认 8888），自签证书请先在系统里信任。',
+        connLocked: '插件配置（cordis.patch.yml）里写死了 apiUrl，页面保存的地址不会成为生效地址。',
+        connSource: '来源',
+        connCloud: 'Hindsight Cloud',
+        connSelfHosted: '自建服务器',
+        connDaemon: '本机守护进程',
+        connModeHint: 'cloud 走官方云；self-hosted 指向自建服务；daemon 用本机 9077 端口起的守护进程。',
+        connNoChange: '没有改动',
+        connResetUrl: '恢复默认地址',
       },
       en: {
         sidebar: 'Hindsight memory',
@@ -120,7 +143,7 @@ window.__ModuleLoader__.load({
         tabProjects: 'Projects',
         tabChats: 'Group chats',
         tabBanks: 'All banks',
-        tabDiagnostics: 'Diagnostics',
+        tabDiagnostics: 'Settings',
         connected: 'Connected',
         unreachable: 'Unreachable',
         config: 'Config file',
@@ -209,6 +232,29 @@ window.__ModuleLoader__.load({
         bindAllNone: 'No workspace to map',
         bindAllPartial: 'partly failed',
         mapSummary: 'Map this folder to the bank',
+        connTitle: 'Hindsight connection',
+        connUrl: 'Server',
+        connMode: 'Mode',
+        connToken: 'Token',
+        connTokenHint: 'A token is set; leave blank to keep it',
+        connClearToken: 'Clear token',
+        connTest: 'Test',
+        connTesting: 'Testing…',
+        connSave: 'Save',
+        connSaving: 'Saving…',
+        connSaved: 'Connection saved',
+        connSavedRestart: 'The memory plugin uses the new address after DSH restarts; this page uses it now.',
+        connReachable: 'reachable',
+        connUnreachable: 'unreachable',
+        connHint: 'For a server deployment use http(s)://host:port (Hindsight listens on 8888 by default); trust a self-signed certificate in the OS first.',
+        connLocked: 'The plugin config (cordis.patch.yml) pins apiUrl, so a saved address here will not be the effective one.',
+        connSource: 'source',
+        connCloud: 'Hindsight Cloud',
+        connSelfHosted: 'Self-hosted',
+        connDaemon: 'Local daemon',
+        connModeHint: 'cloud talks to the hosted service; self-hosted points at your own server; daemon uses the local daemon on port 9077.',
+        connNoChange: 'No change',
+        connResetUrl: 'Reset to default',
       },
     };
 
@@ -282,6 +328,8 @@ window.__ModuleLoader__.load({
 .hm-kv dd{margin:0;color:var(--dsw-alias-label-secondary);word-break:break-all}
 .hm-form{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;padding:12px 14px}
 .hm-field{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--dsw-alias-label-tertiary)}
+.hm-field-wide{flex:1 1 320px;min-width:0}
+.hm-field-narrow{flex:0 0 220px}
 .hm-cat[data-cat="workspace"]{color:var(--dsw-alias-state-business-primary)}
 .hm-cat[data-cat="project"]{color:var(--dsw-alias-state-success-primary)}
 .hm-cat[data-cat="chat"]{color:var(--dsw-alias-state-warn-label)}
@@ -419,6 +467,154 @@ window.__ModuleLoader__.load({
         ),
       );
     }
+    /* ─────────────────────────── connection ─────────────────────────── */
+
+    function serverLabel(url) {
+      const text = String(url || '').replace(/^https?:\/\//, '').replace(/\/+$/, '');
+      return text.length > 30 ? `${text.slice(0, 29)}…` : text;
+    }
+
+    /**
+     * The Hindsight endpoint editor. It writes the same fields the memory
+     * plugin reads (`apiUrl`, `serverMode`, `apiToken` in coding-agent.json),
+     * so one edit moves both this page and DSH's own memory there.
+     */
+    function ConnectionCard(props) {
+      const { conn, t: tr, onSaved } = props;
+      const [url, setUrl] = React.useState(conn?.apiUrl || '');
+      const [mode, setMode] = React.useState(conn?.serverMode || 'cloud');
+      const [token, setToken] = React.useState('');
+      const [probe, setProbe] = React.useState(null);
+      const [working, setWorking] = React.useState('');
+      const [error, setError] = React.useState('');
+
+      React.useEffect(() => {
+        setUrl(conn?.apiUrl || '');
+        setMode(conn?.serverMode || 'cloud');
+      }, [conn?.apiUrl, conn?.serverMode]);
+
+      const run = async (kind, fn) => {
+        setWorking(kind);
+        setError('');
+        try {
+          return await fn();
+        } catch (caught) {
+          setError(caught.message || String(caught));
+          return null;
+        } finally {
+          setWorking('');
+        }
+      };
+
+      const test = () =>
+        run('test', async () => {
+          const result = await call('testConnection', { apiUrl: url, apiToken: token || undefined });
+          setProbe(result);
+        });
+
+      const save = () =>
+        run('save', async () => {
+          const result = await call('setConnection', { apiUrl: url, serverMode: mode, apiToken: token || undefined });
+          setProbe(result.probe);
+          setToken('');
+          onSaved?.(result);
+        });
+
+      const clear = () =>
+        run('clear', async () => {
+          const result = await call('setConnection', { clearToken: true });
+          setProbe(result.probe);
+          setToken('');
+          onSaved?.(result);
+        });
+
+      const resetUrl = () => setUrl('');
+
+      const modes = [
+        ['cloud', tr('connCloud')],
+        ['self-hosted', tr('connSelfHosted')],
+        ['daemon', tr('connDaemon')],
+      ];
+
+      return h(
+        'div',
+        { className: 'hm-card' },
+        h(
+          'div',
+          { className: 'hm-card-head' },
+          h('span', { className: 'hm-card-title' }, tr('connTitle')),
+          h('span', { className: 'hm-spacer' }),
+          conn ? h(Chip, null, `${tr('connSource')}: ${conn.apiUrlSource}`) : null,
+          conn ? h(Chip, { tone: conn.tokenSet ? 'ok' : 'default' }, conn.tokenSet ? `${tr('connToken')} ✓` : `${tr('connToken')} —`) : null,
+        ),
+        h(
+          'div',
+          { className: 'hm-form' },
+          h(
+            'label',
+            { className: 'hm-field hm-field-wide' },
+            tr('connUrl'),
+            h('input', {
+              className: 'hm-input',
+              'data-mono': 'true',
+              value: url,
+              placeholder: conn?.defaultApiUrl || '',
+              onChange: (event) => setUrl(event.target.value),
+            }),
+          ),
+          h(
+            'label',
+            { className: 'hm-field hm-field-narrow' },
+            tr('connMode'),
+            h(
+              'select',
+              { className: 'hm-select', value: mode, onChange: (event) => setMode(event.target.value) },
+              modes.map(([value, label]) => h('option', { key: value, value }, `${value} · ${label}`)),
+            ),
+          ),
+          h(
+            'label',
+            { className: 'hm-field hm-field-wide' },
+            tr('connToken'),
+            h('input', {
+              className: 'hm-input',
+              'data-mono': 'true',
+              type: 'password',
+              autoComplete: 'off',
+              value: token,
+              placeholder: conn?.tokenSet ? tr('connTokenHint') : '',
+              onChange: (event) => setToken(event.target.value),
+            }),
+          ),
+        ),
+        h(
+          'div',
+          { className: 'hm-hint', style: { padding: '0 14px 8px', display: 'flex', flexDirection: 'column', gap: '3px' } },
+          h('div', null, tr('connHint')),
+          h('div', null, tr('connModeHint')),
+          conn?.tokenSet ? h('div', null, `${tr('connToken')}: ${tr('connTokenHint')} · ${conn.apiTokenSource}`) : null,
+        ),
+        conn?.pluginUrlsLocked ? h('div', { className: 'hm-notice', style: { margin: '0 14px 10px' } }, tr('connLocked')) : null,
+        h(
+          'div',
+          { className: 'hm-editor-row', style: { padding: '0 14px 14px' } },
+          h(Button, { variant: 'primary', disabled: Boolean(working), onClick: save }, working === 'save' ? tr('connSaving') : tr('connSave')),
+          h(Button, { disabled: Boolean(working), onClick: test }, working === 'test' ? tr('connTesting') : tr('connTest')),
+          h(Button, { disabled: Boolean(working), onClick: resetUrl }, tr('connResetUrl')),
+          conn?.tokenSet ? h(Button, { variant: 'ghost', disabled: Boolean(working), onClick: clear }, tr('connClearToken')) : null,
+          h('span', { className: 'hm-spacer' }),
+          probe
+            ? h(
+                Chip,
+                { tone: probe.reachable ? 'ok' : 'bad', dot: true },
+                probe.reachable ? `${tr('connReachable')} · ${probe.latencyMs}ms · ${probe.status}` : `${tr('connUnreachable')} · ${probe.error || ''}`,
+              )
+            : null,
+        ),
+        error ? h('div', { className: 'hm-notice', style: { margin: '0 14px 12px' } }, error) : null,
+      );
+    }
+
     /* ─────────────────────────── page ─────────────────────────── */
 
     function HindsightPanel(props) {
@@ -444,13 +640,14 @@ window.__ModuleLoader__.load({
         setEditing('');
         setConfirming('');
         try {
-          const [overview, workspaceData, projectData, chatData] = await Promise.all([
+          const [overview, workspaceData, projectData, chatData, connection] = await Promise.all([
             call('overview'),
             call('workspaces'),
             call('projects'),
             call('chats'),
+            call('connection'),
           ]);
-          setData({ overview, workspaces: workspaceData, projects: projectData, chats: chatData });
+          setData({ overview, workspaces: workspaceData, projects: projectData, chats: chatData, connection });
           setLoadError('');
           try {
             const bankData = await call('banks');
@@ -544,6 +741,19 @@ window.__ModuleLoader__.load({
             { className: 'hm-head-row' },
             h('div', { className: 'hm-title' }, t('title')),
             h('span', { className: 'hm-spacer' }),
+            overview
+              ? h(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'hm-chip',
+                    style: { cursor: 'pointer' },
+                    title: `${overview.config.apiUrl} — ${t('tabDiagnostics')}`,
+                    onClick: () => setTab('diagnostics'),
+                  },
+                  `${t('connUrl')}: ${serverLabel(overview.config.apiUrl)}`,
+                )
+              : null,
             h(
               Chip,
               { tone: overview?.health?.ok ? 'ok' : 'bad', dot: true },
@@ -1053,8 +1263,24 @@ window.__ModuleLoader__.load({
           tab === 'diagnostics'
             ? h(
                 'div',
-                { className: 'hm-card' },
-                h('div', { className: 'hm-card-head' }, h('span', { className: 'hm-card-title' }, t('tabDiagnostics'))),
+                { style: { display: 'flex', flexDirection: 'column', gap: '14px' } },
+                h(ConnectionCard, {
+                  conn: data?.connection,
+                  t,
+                  onSaved: (result) => {
+                    note(
+                      'ok',
+                      result.saved === false
+                        ? t('connNoChange')
+                        : `${t('connSaved')} · ${t('connSavedRestart')}${result.warning ? ` — ${result.warning}` : ''}`,
+                    );
+                    load();
+                  },
+                }),
+                h(
+                  'div',
+                  { className: 'hm-card' },
+                  h('div', { className: 'hm-card-head' }, h('span', { className: 'hm-card-title' }, t('tabDiagnostics'))),
                 overview
                   ? h(
                       'dl',
@@ -1087,7 +1313,8 @@ window.__ModuleLoader__.load({
                       ),
                     )
                   : h('div', { className: 'hm-empty' }, '—'),
-              )
+                  ),
+                )
             : null,
         ),
       );

@@ -8,7 +8,7 @@
 - **项目**：Bots 项目对应 `bots::project::<KEY>`，绑到项目文件夹，项目的任务和项目会话共享一个记忆。
 - **群聊**：Bots 群聊对应 `bots::chat::<通道>::<会话>`，绑到为该群准备的独立目录。
 - **全部 bank**：分类、事实数、绑定目录、使命；可新建、改使命、删除。
-- **诊断**：服务地址、配置路径、令牌来源、命名模板、已写入的全部映射。
+- **设置**：改 Hindsight 连接（服务地址、模式、令牌），保存前可先测试；下面还有配置路径、命名模板、数据来源和已写入的全部映射。
 - **`hindsight_manager` 工具**：同样的操作以工具形式给机器人用，项目里或群里的机器人可以自己建 bank、看 bank。
 
 ## 原理
@@ -40,7 +40,19 @@ Hindsight 的 DSH 插件按会话的工作目录解析 bank，规则写在 `~/.h
 | 项目 | 项目 key、文件夹、成员 | 接入 `bots::project::<KEY>`、改绑、解除 |
 | 群聊 | 通道、会话 id、所属机器人、任务数 | 接入 `bots::chat::…`、选工作目录、解除 |
 | 全部 bank | 按分类的全部 bank、事实数、目录、使命 | 新建、改使命、删除 |
-| 诊断 | 连接、配置、模板、数据来源、映射 | — |
+| 设置 | 连接编辑（地址、模式、令牌）+ 诊断 | 测试、保存、清除令牌 |
+
+## 更换服务地址
+
+记忆系统可以部署在别处——局域网里的一台机器，或者公网上的主机。**设置 → Hindsight 连接** 改的是 coding-agent 插件从 `~/.hindsight/coding-agent.json` 读的那三个字段：
+
+- **服务地址**：`http(s)://主机:端口`，例如 `http://192.168.1.20:8888`、`https://memory.example.com`。末尾斜杠会被规范掉；留空则删掉这个键，回到环境变量或云默认地址。
+- **服务模式**：`cloud`、`self-hosted`、`daemon`，对应官方云、自建服务、本机守护进程。
+- **令牌**：只写不读——填了就写入 `apiToken`，「清除令牌」删掉它，留空保持原样；页面不会回显，日志里也没有。
+
+**测试** 只对候选地址做 `/health`、`/version` 探测，不写任何东西，密码抄错、端口不对、自签证书没信任都会先暴露出来。**保存** 写文件后再探一次。本页立刻使用新地址；DSH 自己的记忆插件要重启 DSH 后才切过去。
+
+如果插件配置 `cordis.patch.yml` 里写死了 `apiUrl`，页面会提示：那个值优先，保存的地址只有在清掉覆盖后才生效。
 
 ## 命名
 
@@ -73,7 +85,7 @@ hindsight_manager { action: "bind_chat", chat: "feishu:bot-1/app-1:oc_xxx" }
 hindsight_manager { action: "create_bank", bank: "team::research" }
 ```
 
-动作：`status`、`banks`、`workspaces`、`projects`、`chats`、`bind_workspace`、`bind_all_workspaces`、`bind_project`、`bind_chat`、`create_bank`、`set_mission`、`unbind_workspace`、`unbind_project`、`unbind_chat`、`delete_bank`。
+动作：`status`、`connection`、`banks`、`workspaces`、`projects`、`chats`、`bind_workspace`、`bind_all_workspaces`、`bind_project`、`bind_chat`、`create_bank`、`set_mission`、`set_connection`（服务地址与模式；令牌请在设置页填，不要写进工具参数）、`unbind_workspace`、`unbind_project`、`unbind_chat`、`delete_bank`。
 
 ## 说明
 

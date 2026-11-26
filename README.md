@@ -8,7 +8,7 @@ DSH already remembers a project when its Hindsight coding-agent plugin is instal
 - **Projects** — Bots projects get `bots::project::<KEY>`, bound to the project's folder, so the project's tasks and project conversations share one memory.
 - **Group chats** — Bots chat threads get `bots::chat::<channel>::<chat>`, bound to a dedicated work folder.
 - **All banks** — categories, fact counts, bound folders, missions; create, re-mission, delete.
-- **Diagnostics** — server, config path, token source, name template, every written mapping.
+- **Settings** — the Hindsight connection (server, mode, token) with a test before saving, plus the config path, name template, data sources and every written mapping.
 - **`hindsight_manager`** — the same operations as an agent tool, so a bot working in a project or a chat can create and inspect banks itself.
 
 ## How routing works
@@ -40,7 +40,19 @@ The server address and token default to `~/.hindsight/coding-agent.json`; overri
 | Projects | Bots projects (`KEY`, folder, members) | map to `bots::project::<KEY>`, change, unmap |
 | Group chats | Bots chat threads (channel, chat id, bot, task count) | map to `bots::chat::…`, choose the work folder, unmap |
 | All banks | every bank by category, facts, folders, mission | create, edit mission, delete |
-| Diagnostics | connection, config, template, sources, mappings | — |
+| Settings | connection editor (server, mode, token) and diagnostics | test, save, clear token |
+
+## Changing the server
+
+The memory system can live elsewhere — a box on your LAN or a host on the internet. **Settings → Hindsight connection** edits the same three fields the coding-agent plugin reads from `~/.hindsight/coding-agent.json`:
+
+- **Server** — `http(s)://host:port`, e.g. `http://192.168.1.20:8888` or `https://memory.example.com`. A trailing slash is normalized away; an empty value removes the key so the env var / cloud default applies again.
+- **Mode** — `cloud`, `self-hosted`, or `daemon` (which server the plugin should talk to).
+- **Token** — write-only: typing one sets `apiToken`, "Clear token" removes it, leaving it blank keeps the current one. It is never shown back or logged.
+
+**Test** probes the candidate address (`/health`, then `/version`) without writing anything, so a mistyped host or an untrusted self-signed certificate shows up before you commit the change. **Save** writes the file and probes again. This page uses the new address immediately; DSH's own memory plugin picks it up when DSH restarts.
+
+If `apiUrl` is pinned in the plugin's `cordis.patch.yml`, the page says so — that value wins, and the saved one only applies once the override is cleared.
 
 ## Naming
 
@@ -73,7 +85,7 @@ hindsight_manager { action: "bind_chat", chat: "feishu:bot-1/app-1:oc_xxx" }
 hindsight_manager { action: "create_bank", bank: "team::research" }
 ```
 
-Actions: `status`, `banks`, `workspaces`, `projects`, `chats`, `bind_workspace`, `bind_all_workspaces`, `bind_project`, `bind_chat`, `create_bank`, `set_mission`, `unbind_workspace`, `unbind_project`, `unbind_chat`, `delete_bank`.
+Actions: `status`, `connection`, `banks`, `workspaces`, `projects`, `chats`, `bind_workspace`, `bind_all_workspaces`, `bind_project`, `bind_chat`, `create_bank`, `set_mission`, `set_connection` (server address and mode; the token belongs in the page, not in a tool call), `unbind_workspace`, `unbind_project`, `unbind_chat`, `delete_bank`.
 
 ## Notes
 
