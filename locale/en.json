@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Hindsight memory",
+    "description": "Route DSH workspaces, Bots projects and group chats to their own Hindsight memory banks: one page for every category and mapping, one-click workspace onboarding, per-project and per-chat banks, plus a tool bots can call.",
+    "detail": "docs/DETAIL.md"
+  }
+}

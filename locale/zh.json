@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Hindsight 记忆管理",
+    "description": "把 DSH 工作区、Bots 项目和群聊接入各自的 Hindsight 记忆 bank：一个页面看全部分类与映射，一键接入工作区，按项目或群聊创建 bank，并提供给机器人调用的工具。",
+    "detail": "docs/DETAIL.md"
+  }
+}

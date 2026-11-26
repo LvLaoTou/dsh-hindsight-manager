@@ -1,0 +1,56 @@
+{
+  "name": "dsh-hindsight-manager",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Manage Hindsight memory banks from DSH: add workspaces, classify banks, and create banks for Bots projects and group chats.",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "lib",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "docs",
+    "icon.svg",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-primitives"
+      ]
+    }
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "hindsight",
+    "memory",
+    "agents",
+    "bots"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LvLaoTou/dsh-hindsight-manager.git"
+  },
+  "homepage": "https://github.com/LvLaoTou/dsh-hindsight-manager#readme",
+  "bugs": {
+    "url": "https://github.com/LvLaoTou/dsh-hindsight-manager/issues"
+  }
+}

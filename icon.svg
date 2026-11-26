@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Hindsight memory manager">
+  <defs>
+    <linearGradient id="hm-g" x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4c8dff"/>
+      <stop offset="1" stop-color="#7a5cff"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#hm-g)"/>
+  <g fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="32" cy="21" rx="15" ry="5.6"/>
+    <path d="M17 21v8.2c0 3.1 6.7 5.6 15 5.6s15-2.5 15-5.6V21"/>
+    <path d="M17 29.2v8.2c0 3.1 6.7 5.6 15 5.6s15-2.5 15-5.6v-8.2"/>
+    <path d="M17 37.4v5.2c0 3.1 6.7 5.6 15 5.6s15-2.5 15-5.6v-5.2"/>
+  </g>
+</svg>

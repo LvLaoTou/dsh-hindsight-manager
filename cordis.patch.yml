@@ -1,0 +1,11 @@
+- insert:
+    - id: hindsight-manager
+      name: dsh-hindsight-manager
+      config:
+        showSidebarEntry: true
+        # Hindsight server. Empty means: read apiUrl / apiToken from
+        # ~/.hindsight/coding-agent.json (the coding-agent plugin's config).
+        apiUrl: ''
+        apiToken: ''
+        # Optional per-field overrides; empty values fall back to the file.
+        agentConfigPath: ''
